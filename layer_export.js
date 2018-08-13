@@ -15,12 +15,41 @@ function myfunc() {
 	 rulesfilename = 'RulesTreatmentsLayers.csv';
 	 exportpath = 'd:\\';
 	 out_file_type = 'pdf';
-	 var max_row = 30.0;
+	 var max_row = 50.0;
 	 
+	
+	   // -------- initial coords block 	
+		   var pt2mm = 2.83464567;
+		   var dx = 70;//700
+		   var dy = 70;//700
+			
+		   /* 
+		   // big export
+		   var x1 = -8020;
+		   var y1 = 50;
+			*/
+			
+			// normal export
+		   var x1 = 120;
+		   var y1 = 50;
+		   
+		   // text above sticker (quantity)
+		   var myTextFrame;
+		   var qtty_text = ' шт.';
+		   var x2 =  x1 - 20;
+		   var y2 = y1+ 140;
+	   
+	  // ---------  end initial coords block
+  
+		// page size in points 
+		var fX=85;
+		var fY=280;
+  
+	 
+
 	 // rules store in script path 
 		var s = $.fileName;
 		var script_path = s.slice(0, s.lastIndexOf('\\'))+'\\';
-	 
 	 
 
     // 1. Создаем список подслоев, из которого делаем список правил для кадого слоя.
@@ -36,12 +65,9 @@ function myfunc() {
 
     //alert('Внимание! Должен быть открыт только документ с наклейками!');
 	
-	 var dds =  show_dialog(csvpath,csvfilename);
+	 var dds =  show_dialog(csvpath,csvfilename,max_row);
 	 if (dds['Exit']=='Yes')
 	 { 
-      //  alert($.fileName);
-
-		//alert(myScriptPath);
 		 return;
 	 }
 	/*
@@ -69,9 +95,7 @@ function myfunc() {
         }
 		*/
 	
-	// page size in points 
-	var fX=85;
-	var fY=280;
+
 	
     var thisDoc = app.documents.add(null,fX,fY);
 	//thisDoc.views[0].zoom = 100;
@@ -84,10 +108,11 @@ function myfunc() {
 
 
     if (!csvRules.exists){ alert(csvRules + ' not exist'); return;}
-    if (!csvTask.exists) { alert(csvTask+'  not exist');   return;}
+    if (!csvTask.exists) { alert(csvTask  + '  not exist');return;}
    var fRules = Csv2Array(csvRules);
    var fTask = Csv2Array(csvTask);
 
+   //
    var t = [];
    var k = 0;
    for (var i = 1; i < fTask.length; i++)
@@ -103,7 +128,6 @@ function myfunc() {
 					   data.push(fTask[i][1]);
 					   data.push(GetNumSublayer(fRules[j][0], fRules[j][1]));
 					   t[k] = data;
-					   
 					//   if (i < 5) alert(t[k]);
 					   k++;
 				   }
@@ -111,39 +135,13 @@ function myfunc() {
            }
    }
 // t - полный массив нужных слоев с количеством наклеек в конце.
-   var pt2mm = 2.83464567;
-   var dx = 70;//700
-    var dy = 70;//700
-	
-   var x1 = -8020;
-   var y1 = 50;
 
-   
-   /* 
-   // big export
-   var myTextFrame;
-   var x2 = -8000;
-   var y2 = 190;	
-	*/
-	
-	
-   var x1 = 120;
-   var y1 = 50;
 
-   var myTextFrame;
-   var x2 = 100;
-   var y2 = 190;
 
-   
-   
-   
-	var ii = 1.0;
-	
-	
+
+   var ii = 1.0;
    for (var i in t) 
    {
-
-	   
 			   app.activeDocument.layers[t[i][0]].layers[t[i][9]].visible = true;
 			   setActiveArtboardBy(t[i][7]); // 7 - имя листа (Artboard name)
 			   app.activeDocument.selectObjectsOnActiveArtboard();
@@ -161,49 +159,34 @@ function myfunc() {
 				   {
 					   myTextFrame = app.activeDocument.textFrames.add();
 					   myTextFrame.position = [x2, y2];
-					   myTextFrame.contents = t[i][8] + ' шт.';
+					   myTextFrame.contents = t[i][8] + qtty_text;
 				   }
 
 					   app.activeDocument.views[0].centerPoint = Array(x1, y1);
 					   //alert(t[i][5]);
-					   
-					   
-					   
 					   dx = Number(t[i][5])*pt2mm; // convert mm to points
 					   dy =  Number(t[i][6])*pt2mm + 40; // convert mm to points + points
 					   
 					  // располагать наклейки в ряд 
-					 if(dds['LayerToRow']=='Yes' ){  
-					   
-
-					   
-					   //alert (ii%max_row);
-					   if (ii%max_row==0)
-					   {
-						 y1-= dy;
-					     y2-= dy;
-						
-						x1=x1 - dx * (max_row -1) ;
-						x2=x2 - dx * (max_row -1 );
-						 
-						   
+					 if(dds['LayerToRow']=='Yes' )
+					 {  
+						   if (ii%dds['max_row']==0)
+						   {
+							 y1-= dy;
+							 y2-= dy;
+							
+							x1=x1 - dx * (dds['max_row'] -1) ;
+							x2=x2 - dx * (dds['max_row'] -1 );
+						   }
+						   else{
+							x1 +=dx; //t[i][5];//dx;
+							x2 +=dx;//t[i][5]; //dx;
 					   }
-					   else{
-						x1 +=dx; //t[i][5];//dx;
-					    x2 +=dx;//t[i][5]; //dx;
-						   
-					   }
-					   
-					   
 					 }
 					 else { // располагать наклейки в столбик
-					   
 					   y1+= dy;
 					   y2+= dy; 
 					 }
-					 
-					 
-					 
 				}	   
 			   app.paste();
 			   app.activeDocument.selection = null;
@@ -224,13 +207,7 @@ function myfunc() {
 }
 
 
-
-
-
-
-
-
-function show_dialog(csvpath,csvfilename)
+function show_dialog(csvpath,csvfilename, max_row)
 {
 	
 
@@ -281,7 +258,12 @@ function show_dialog(csvpath,csvfilename)
 			(box.LayerToRow.No = box.LayerToRow.add('radiobutton', undefined, 'Нет' )).helpTip = "layers2column"; 
 
 			box.LayerToRow.Yes.value = true; 
-			box.LayerToRow.orientation='row'; 			
+			box.LayerToRow.orientation='row'; 
+
+		box.panel2 = box.add('panel', undefined, "Количество в ряд");  
+		box.panel2.max_row = box.panel2.add('edittext', undefined, max_row);  
+		box.panel2.orientation='row'; 
+			
 			
 		// ------------------------------------------------------------------------------------	
 		
@@ -317,6 +299,8 @@ function show_dialog(csvpath,csvfilename)
 		
 		ds['csvpath']=box.panel.csvpath.text;
 		ds['csvfilename']=box.panel.csvfilename.text;
+		ds['max_row'] = box.panel2.max_row.text;
+		
 		  box.close();  
 		}  
     box.show();
